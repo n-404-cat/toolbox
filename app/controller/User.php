@@ -4,6 +4,7 @@ namespace app\controller;
 
 
 use think\facade\View;
+use app\service\VisitStats;
 
 class User extends Base
 {
@@ -20,7 +21,16 @@ class User extends Base
                 $arr[$v] = 0;
             }
         }
-        View::assign('oauth', $arr);
+
+        // 获取访问量数据
+        $visitStats = new VisitStats();
+        $stats = $visitStats->getStats();
+
+        View::assign([
+            'oauth' => $arr,
+            'total_visits' => $stats['total_visits'],
+            'today_visits' => $stats['today_visits'],
+        ]);
         return view();
     }
 }

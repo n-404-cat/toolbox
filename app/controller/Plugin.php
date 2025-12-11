@@ -57,8 +57,15 @@ class Plugin extends Base
         }
         $template = plugin_template_path_get($path);
         $model = plugin_info_get($alias);
+
+        // 获取访问量数据
+        $visitStats = new \app\service\VisitStats();
+        $stats = $visitStats->getStats();
+
         View::assign([
-            "plugin" => $model
+            "plugin" => $model,
+            "total_visits" => $stats['total_visits'],
+            "today_visits" => $stats['today_visits']
         ]);
         if ($model->template !== 'default') {
             $template = template_path_get() . 'template/' . $model->template . '.html';

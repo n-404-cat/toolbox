@@ -8,4 +8,6 @@ return [
     // Session初始化
     \think\middleware\SessionInit::class,
     \app\middleware\Response::class
+    // 访问量统计中间件
+    \app\middleware\VisitStats::class
 ];

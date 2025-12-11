@@ -2,16 +2,22 @@
 
 namespace app\controller;
 
-
+use app\service\VisitStats;
 class Index extends Base
 {
     public function index()
     {
-        return view();
+        // 获取访问量数据
+        $visitStats = new VisitStats();
+        $stats = $visitStats->getStats();
+        return view('', $stats);
     }
 
     public function stars()
     {
-        return view();
+        // 获取访问量数据
+        $visitStats = new VisitStats();
+        $stats = $visitStats->getStats();
+        return view('', $stats);
     }
 }
