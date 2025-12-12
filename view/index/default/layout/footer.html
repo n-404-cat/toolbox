@@ -7,7 +7,9 @@
             </svg>
             <p>Copyright by &copy;{:date('Y')}, <a target="_blank" href="http://www.aoaostar.com">AOAOSTAR</a>.
             </p>
+            {if isset($total_visits) || isset($today_visits)}
             <p class="mt-2">总访问量: {$total_visits} | 今日访问量: {$today_visits}</p>
+            {/if}
         </div>
         <div>
             <span class="footer-title">Social</span>
