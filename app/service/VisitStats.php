@@ -32,14 +32,10 @@ class VisitStats
     public function increment()
     {
         // 更新总访问量
-        $total = $this->getTotalVisits();
-        $total++;
-        $this->saveTotalVisits($total);
+        $total = $this->incrementFileValue($this->dataFile, 'total');
 
         // 更新今日访问量
-        $todayVisits = $this->getTodayVisits();
-        $todayVisits++;
-        $this->saveTodayVisits($todayVisits);
+        $todayVisits = $this->incrementFileValue($this->dailyFile, 'visits', ['date' => $this->today]);
 
         // 清除缓存，确保数据实时更新
         Cache::delete('site_stats');
@@ -51,25 +47,49 @@ class VisitStats
     }
 
     /**
+     * 原子增加文件中的数值
+     */
+    protected function incrementFileValue($file, $key, $extraData = [])
+    {
+        $fp = fopen($file, 'c+');
+        if (!$fp) {
+            return 0;
+        }
+
+        $value = 0;
+        // 尝试获取排他锁，等待获取
+        if (flock($fp, LOCK_EX)) {
+            $content = '';
+            while (!feof($fp)) {
+                $content .= fread($fp, 8192);
+            }
+
+            $data = json_decode($content, true) ?: [];
+            $value = ($data[$key] ?? 0) + 1;
+
+            $data[$key] = $value;
+            $data['updated_at'] = time();
+            foreach ($extraData as $k => $v) {
+                $data[$k] = $v;
+            }
+
+            // 清空文件并写入新内容
+            ftruncate($fp, 0);
+            rewind($fp);
+            fwrite($fp, json_encode($data, JSON_UNESCAPED_UNICODE));
+            fflush($fp);
+            flock($fp, LOCK_UN);
+        }
+        fclose($fp);
+        return $value;
+    }
+
+    /**
      * 获取总访问量
      */
     public function getTotalVisits()
     {
-        if (file_exists($this->dataFile)) {
-            $content = file_get_contents($this->dataFile);
-            $data = json_decode($content, true);
-            return $data['total'] ?? 0;
-        }
-        return 0;
-    }
-
-    /**
-     * 保存总访问量
-     */
-    protected function saveTotalVisits($total)
-    {
-        $data = ['total' => $total, 'updated_at' => time()];
-        file_put_contents($this->dataFile, json_encode($data, JSON_UNESCAPED_UNICODE));
+        return $this->getFileValue($this->dataFile, 'total');
     }
 
     /**
@@ -77,21 +97,36 @@ class VisitStats
      */
     public function getTodayVisits()
     {
-        if (file_exists($this->dailyFile)) {
-            $content = file_get_contents($this->dailyFile);
-            $data = json_decode($content, true);
-            return $data['visits'] ?? 0;
-        }
-        return 0;
+        return $this->getFileValue($this->dailyFile, 'visits');
     }
 
     /**
-     * 保存今日访问量
+     * 获取文件中的数值
      */
-    protected function saveTodayVisits($visits)
+    protected function getFileValue($file, $key)
     {
-        $data = ['visits' => $visits, 'date' => $this->today, 'updated_at' => time()];
-        file_put_contents($this->dailyFile, json_encode($data, JSON_UNESCAPED_UNICODE));
+        if (!file_exists($file)) {
+            return 0;
+        }
+
+        $fp = fopen($file, 'r');
+        if (!$fp) {
+            return 0;
+        }
+
+        $value = 0;
+        // 尝试获取共享锁
+        if (flock($fp, LOCK_SH)) {
+            $content = '';
+            while (!feof($fp)) {
+                $content .= fread($fp, 8192);
+            }
+            $data = json_decode($content, true);
+            $value = $data[$key] ?? 0;
+            flock($fp, LOCK_UN);
+        }
+        fclose($fp);
+        return $value;
     }
 
     /**
@@ -122,7 +157,8 @@ class VisitStats
         if ($files) {
             foreach ($files as $file) {
                 // 跳过总访问量文件
-                if ($file == $this->dataFile) continue;
+                if ($file == $this->dataFile)
+                    continue;
 
                 // 提取日期
                 $filename = basename($file, '.json');
