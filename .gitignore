@@ -1,0 +1,10 @@
+/.idea
+/.vscode
+*.log
+.env
+*.lock
+public/test
+*_test.php
+/vendor
+/runtime
+.DS_Store
