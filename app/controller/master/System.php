@@ -99,4 +99,57 @@ class System extends BaseController
         }
         return success($arr);
     }
+
+    public function sitemap()
+    {
+        try {
+            $domain = env('app.host', '');
+            if (empty($domain)) {
+                $domain = config_get('global.site_url', '');
+            }
+            if (empty($domain)) {
+                $domain = request()->domain();
+            }
+            $domain = rtrim($domain, '/');
+
+            $sitemapPath = public_path() . 'sitemap.xml';
+
+            $xml = new \XMLWriter();
+            $xml->openURI($sitemapPath);
+            $xml->startDocument('1.0', 'UTF-8');
+            $xml->setIndent(true);
+            
+            $xml->startElement('urlset');
+            $xml->writeAttribute('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9');
+
+            // Home page
+            $xml->startElement('url');
+            $xml->writeElement('loc', $domain . '/');
+            $xml->writeElement('lastmod', date('Y-m-d'));
+            $xml->writeElement('changefreq', 'daily');
+            $xml->writeElement('priority', '1.0');
+            $xml->endElement();
+
+            // Plugins
+            $plugins = \app\model\Plugin::where('enable', 1)->select();
+            foreach ($plugins as $plugin) {
+                $updateTime = date('Y-m-d', strtotime($plugin->update_time ?: ($plugin->create_time ?: date('Y-m-d H:i:s'))));
+                
+                $xml->startElement('url');
+                $xml->writeElement('loc', $domain . '/' . $plugin->alias);
+                $xml->writeElement('lastmod', $updateTime);
+                $xml->writeElement('changefreq', 'weekly');
+                $xml->writeElement('priority', '0.8');
+                $xml->endElement();
+            }
+
+            $xml->endElement(); // urlset
+            $xml->endDocument();
+            $xml->flush();
+
+            return success(['message' => 'Sitemap generated successfully at ' . $sitemapPath]);
+        } catch (\Exception $e) {
+            return error($e->getMessage());
+        }
+    }
 }

@@ -27,6 +27,7 @@
 [Github Oauth 配置](docs/Github_Oauth.md)     
 [Plugin Template 使用](docs/Plugin_Template.md)      
 [Plugin Permission 使用](docs/Plugin_Permission.md)
+[站点地图 Sitemap 使用](docs/Sitemap.md)
 
 #### 演示搭建视频
 * <https://www.bilibili.com/video/BV12g411z7KL>

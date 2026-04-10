@@ -7,5 +7,6 @@ return [
     'commands' => [
 
         'plugin:package' => 'app\command\PluginPackage',
+        'sitemap:generate' => 'app\command\Sitemap',
     ],
 ];
